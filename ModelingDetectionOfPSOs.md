@@ -3,33 +3,36 @@ Modeling and Detection of PSOs
 Richard Schweitzer
 3/12/2021
 
-## R Markdown
+This is the supplemental Code for the book chapter “Definition, modeling
+and detection of saccades in the face of post-saccadic oscillations” by
+Richard Schweitzer and Martin Rolfs.
 
-This is an R Markdown document. Markdown is a simple formatting syntax
-for authoring HTML, PDF, and MS Word documents. For more details on
-using R Markdown see <http://rmarkdown.rstudio.com>.
+## Using the Bouzat-Del Punta model function to generate saccades with PSOs
 
-When you click the **Knit** button a document will be generated that
-includes both content as well as the output of any embedded R code
-chunks within the document. You can embed an R code chunk like this:
+Let’s first look at the function to generate saccades with post-saccadic
+oscillations (PSOs). To do that, we need to source two functions first
+and you should have the package *deSolve* installed.
 
 ``` r
-summary(cars)
+library(deSolve)
+source("hypergeom1F1.R") # hypergeometric function 1F1 from CharFun
+source("PSO_fit.R") # all the relevant model formulae
+
+# what's the time interval?
+t_sac <- seq(0, 120)
+
+# plot some trajectories here:
+plot(t_sac, PSO_fit(t_sac = t_sac, xm = 10, beta = 1, mu = 2, A = 0.04, gamma0 = 0.15, k0 = 0.032), col = "black", 
+     xlab = "Time [ms]", ylab = "Position [dva]")
+points(t_sac, PSO_fit(t_sac = t_sac, xm = 6, beta = 1, mu = 2, A = 0.04, gamma0 = 0.15, k0 = 0.032), col = "blue")
+points(t_sac, PSO_fit(t_sac = t_sac, xm = 2, beta = 1, mu = 2, A = 0.04, gamma0 = 0.15, k0 = 0.032), col = "red")
+lines(t_sac, x_t(t = t_sac, beta = 1, mu = 2, xm = 10, A = 0.04), col = "black")
+lines(t_sac, x_t(t = t_sac, beta = 1, mu = 2, xm = 6, A = 0.04), col = "blue")
+lines(t_sac, x_t(t = t_sac, beta = 1, mu = 2, xm = 2, A = 0.04), col = "red")
 ```
 
-    ##      speed           dist       
-    ##  Min.   : 4.0   Min.   :  2.00  
-    ##  1st Qu.:12.0   1st Qu.: 26.00  
-    ##  Median :15.0   Median : 36.00  
-    ##  Mean   :15.4   Mean   : 42.98  
-    ##  3rd Qu.:19.0   3rd Qu.: 56.00  
-    ##  Max.   :25.0   Max.   :120.00
+![](ModelingDetectionOfPSOs_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
 
-## Including Plots
-
-You can also embed plots, for example:
-
-![](ModelingDetectionOfPSOs_files/figure-gfm/pressure-1.png)<!-- -->
-
-Note that the `echo = FALSE` parameter was added to the code chunk to
-prevent printing of the R code that generated the plot.
+``` r
+# 
+```
