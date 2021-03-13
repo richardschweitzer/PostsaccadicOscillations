@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This is the supplemental Code for the book chapter "Definition, modeling and detection of saccades in the face of post-saccadic oscillations" by Richard Schweitzer and Martin Rolfs. 
 
-## Using the Bouzat-Del Punta model function to generate saccades with PSOs
+## Using the Bouzat-Del Punta model to generate saccades with PSOs
 
 Let's first look at the function to generate saccades with post-saccadic oscillations (PSOs). To do that, we need to source two functions first and you should have the package *deSolve* installed.
 
@@ -23,16 +23,148 @@ source("PSO_fit.R") # all the relevant model formulas
 # what's the time interval?
 t_sac <- seq(0, 120)
 
-# plot some trajectories here:
-plot(t_sac, PSO_fit(t_sac = t_sac, xm = 10, beta = 1, mu = 2, A = 0.04, gamma0 = 0.15, k0 = 0.032), col = "black", 
+# plot some random trajectories here:
+plot(t_sac, PSO_fit(t_sac = t_sac, xm = 10, beta = 1, mu = 2, A = 0.04, 
+                    gamma0 = 0.15, k0 = 0.032), col = "black", 
      xlab = "Time [ms]", ylab = "Position [dva]")
-points(t_sac, PSO_fit(t_sac = t_sac, xm = 6, beta = 1, mu = 2, A = 0.04, gamma0 = 0.15, k0 = 0.032), col = "blue")
-points(t_sac, PSO_fit(t_sac = t_sac, xm = 2, beta = 1, mu = 2, A = 0.04, gamma0 = 0.15, k0 = 0.032), col = "red")
+points(t_sac, PSO_fit(t_sac = t_sac, xm = 6, beta = 1, mu = 2, A = 0.04, 
+                      gamma0 = 0.15, k0 = 0.032), col = "blue")
+points(t_sac, PSO_fit(t_sac = t_sac, xm = 2, beta = 1, mu = 2, A = 0.04, 
+                      gamma0 = 0.15, k0 = 0.032), col = "red")
 lines(t_sac, x_t(t = t_sac, beta = 1, mu = 2, xm = 10, A = 0.04), col = "black")
 lines(t_sac, x_t(t = t_sac, beta = 1, mu = 2, xm = 6, A = 0.04), col = "blue")
 lines(t_sac, x_t(t = t_sac, beta = 1, mu = 2, xm = 2, A = 0.04), col = "red")
+legend(100, 2, legend=c("xm=10", "xm=6", "xm=2"),
+       col=c("black", "blue", "red"), lty=1, cex=0.8)
 
-# 
+# Replicate Fig. 3 in Bouzat et al. (2018), at least for xm=16
+plot(t_sac, PSO_fit(t_sac = t_sac, xm = 16, beta = 1, mu = 2, A = 0.04, 
+                    gamma0 = 0.15, k0 = 0.032, c = 0, d = 0), 
+     col = "black", type = "l", ylim = c(0, 20), 
+     xlab = "Time [ms]", ylab = "Position [dva]")
+lines(t_sac, PSO_fit(t_sac = t_sac, xm = 16, beta = 1, mu = 2, A = 0.04, 
+                     gamma0 = 0.15, k0 = 0.032, c = 0.5, d = 3), 
+      col = "red", type = "l")
+legend(60, 5, legend=c("constant (c=0, d=0)", "force-dependent (c=0.5, d=3)"),
+       col=c("black", "red"), lty=1, cex=0.8)
 
+# Replicate Fig. 9 in Del Punta et al. (2019)
+plot(t_sac, PSO_fit(t_sac = t_sac, xm = 10, beta = 1, mu = 2, A = 0.036, 
+                    gamma0 = 0.14, k0 = 0.04, c = 0.5, d = 3, 
+                    viscosity = FALSE), col = "blue", type = "l", ylim = c(0, 13.5), 
+     xlab = "Time [ms]", ylab = "Position [dva]")
+lines(t_sac, PSO_fit(t_sac = t_sac, xm = 10, beta = 1, mu = 2, A = 0.036, 
+                     gamma0 = 0.07, k0 = 0.035, c = 1, d = 5, 
+                     viscosity = TRUE), col = "red")
+lines(t_sac, x_t(t = t_sac, beta = 1, mu = 2, xm = 10, A = 0.036), col = "black")
+legend(60, 5, legend=c("x(t)", "x(t)+y(t) force-dependent (c=0.5, d=3)", "x(t)+y(t) viscosity (c=1, d=5)"),
+       col=c("black", "blue", "red"), lty=1, cex=0.8)
+```
+
+Okay, great, shall we look at an empirically measured saccade? Here we load a random saccade, in fact, one that is from a manually coded database by Nystrom and colleagues, found here: http://dev.humlab.lu.se/www-transfer/people/marcus-nystrom/annotated_data.zip
+
+```{r}
+load("some_sac.rda")
+# what does this saccade look like?
+plot(some_sac$time_sacon, some_sac$x_sacon, col = "darkgreen", 
+     type = "p", xlab = "Time [ms]", ylab = "Position [dva]")
+points(some_sac$time_sacon, some_sac$y_sacon, col = "darkblue")
+# alternatively, a trajectory that we can fit
+plot(some_sac$time_sacon[some_sac$time_sacon>=0], 
+     some_sac$dist_sacon[some_sac$time_sacon>=0], 
+     col = "black", type = "p", xlab = "Time [ms]", ylab = "Position [dva]")
+```
+
+Now try fitting Method 1. Run an optimizer with a grid of different starting parameters.
+
+```{r}
+library(minpack.lm) # for Levenberg-Marquart
+library(data.table)
+library(assertthat)
+
+# this is the function for running the optimizer with a grid of starting parameters:
+source("get_best_NLS.R")
+
+# options for fitting?
+nls_options <- nls.lm.control(maxiter = 100, nprint = 0)
+# model formula as a string:
+nls_model_form <- "dist_sacon ~ PSO_fit(time_sacon, xm, beta=1, mu=2, A, gamma0, k0, c=0, d=0)"
+# run:
+best_PSO_model <- get_best_NLS(df = some_sac[some_sac$time_sacon>=0, ], 
+                               model_control = nls_options, 
+                               model_form = nls_model_form,
+                               start_params_low = c(xm = 7, A = 0.02, gamma0 = 0.05, k0 = 0.01),
+                               start_params_high = c(xm = 12, A = 0.08, gamma0 = 0.2, k0 = 0.1),
+                               absolute_lowest = c(xm = 10e-6, A = 10e-6, gamma0 = 10e-6, k0 = 10e-6),
+                               start_params_n = 3, use_robust = FALSE, 
+                               debug_mode = FALSE)
+best_PSO_model
+
+# what does this look like?
+plot(some_sac$time_sacon[some_sac$time_sacon>=0],  # data
+     some_sac$dist_sacon[some_sac$time_sacon>=0], 
+     col = "black", type = "p", xlab = "Time [ms]", ylab = "Position [dva]")
+lines(some_sac$time_sacon[some_sac$time_sacon>=0], # fit
+     predict(best_PSO_model$best_fit), 
+     col = "black")
+lines(some_sac$time_sacon[some_sac$time_sacon>=0], # eyeball prediction
+      x_t(t = some_sac$time_sacon[some_sac$time_sacon>=0], 
+          xm = best_PSO_model$best_params$xm, A = best_PSO_model$best_params$A, beta = 1, mu = 2), 
+      col = "black", lty = "dotted")
+legend(60, 4, legend=c("fit of pupil data, x(t)+y(t)", "prediction of eyeball data, x(t)"),
+       col=c("black", "black"), lty=c("solid", "dotted"), cex=0.8)
+```
+
+Fitting method 2. First run a (coarse) grid-search, find the best fitting parameters and then use those as starting parameters in a refinement step fit
+
+```{r}
+library(nls2) # for grid search
+
+# what's most likely the amplitude of the saccade? Just to have a reasonable start for xm
+likely_amp <- some_sac$dist_sacon[some_sac$time_sacoff==0]
+
+# step 1: brute-force starting parameters
+# define the grid for the search. it's rather coarse here, but it can always be expanded
+brute_st1 <- expand.grid(xm = seq(likely_amp-0.2, likely_amp+0.2, len = 4), 
+                         mu = seq(1.5, 3, len = 4), A = seq(0.02, 0.06, len = 4),
+                         gamma0 = seq(0.1, 0.2, len = 4), k0 = seq(0.01, 0.04, len = 4) )
+head(brute_st1)
+# run the grid-search here
+brute_fit <- nls2(data = some_sac[some_sac$time_sacon>=0, ],
+                  formula = dist_sacon ~ PSO_fit(time_sacon, xm, beta=1,
+                                                 mu, A, gamma0, k0, c=0, d=0,
+                                                 viscosity = FALSE,
+                                                 use_method = "euler"), # Euler should be fastest method
+                  start = brute_st1, algorithm = "brute-force")
+brute_fit
+brute_fit_coef <- as.numeric(coefficients(brute_fit))
+
+# step 2: refine fit with Levenberg Marquart
+refined_fit <- nlsLM(data = some_sac[some_sac$time_sacon>=0, ], 
+                     control = nls.lm.control(maxiter = 500, nprint = 1),
+                     formula = dist_sacon ~ PSO_fit(time_sacon, xm, beta=1, 
+                                                    mu, A, gamma0, k0, c=0, d=0,
+                                                    viscosity = FALSE),
+                     start = c(xm = brute_fit_coef[1], mu = brute_fit_coef[2], A = brute_fit_coef[3], 
+                               gamma0 = brute_fit_coef[4], k0 = brute_fit_coef[5]),
+                     lower = c(xm = 10e-6, mu=1, A = 10e-6, 
+                               gamma0 = 10e-6, k0 = 10e-6))
+refined_fit
+# fitting method 1 vs 2, that is without vs with mu
+anova(best_PSO_model$best_fit, # Fitting method 1, fixed mu 
+      refined_fit) # Fitting method 2, refined fit, free mu
+
+## plot the predictions of the brute and refined fits
+plot(some_sac$time_sacon[some_sac$time_sacon>=0],  # data
+     some_sac$dist_sacon[some_sac$time_sacon>=0], 
+     col = "black", type = "p", xlab = "Time [ms]", ylab = "Position [dva]")
+lines(some_sac$time_sacon[some_sac$time_sacon>=0], # brute fit
+     predict(brute_fit), 
+     col = "blue", lty = "dashed")
+lines(some_sac$time_sacon[some_sac$time_sacon>=0], # refined fit
+      predict(refined_fit), 
+      col = "red", lty = "solid")
+legend(60, 4, legend=c("grid-search fit", "LM-refined fit"),
+       col=c("blue", "red"), lty=c("dashed", "solid"), cex=0.8)
 ```
 

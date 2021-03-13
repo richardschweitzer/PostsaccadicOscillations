@@ -1,4 +1,5 @@
 # Routines for fitting the PSO with the Model proposed by Bouzat et al. (2018) and Gasaneo et al. (2019)
+# by Richard Schweitzer
 
 # load the hypergeometric function, that is Eq. A1 from Del Punta, Rodriguez, Gasaneo, Bouzat (2019)
 # We use one from the Characteristic Functions Toolbox (CharFun):
