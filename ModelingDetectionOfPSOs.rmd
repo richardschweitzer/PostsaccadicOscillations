@@ -235,7 +235,7 @@ head(simulator_results[[2]]) # fixation and saccade metrics
 
 ## Velocity-based saccade and PSO detection
 
-We describe an add-on the widely used Engbert-Kliegl algorithm for microsaccade detection (see http://read.psych.uni-potsdam.de/index.php?option=com_content&view=article&id=140:engbert-et-al-2015-microsaccade-toolbox-for-r&catid=26:publications&Itemid=34 for the original algorithm), which detects PSOs based on minimum velocity or direction inversion. We'll use that here on our just simulated data. 
+We describe an add-on for the widely used Engbert-Kliegl algorithm for microsaccade detection (see http://read.psych.uni-potsdam.de/index.php?option=com_content&view=article&id=140:engbert-et-al-2015-microsaccade-toolbox-for-r&catid=26:publications&Itemid=34 for the original algorithm), which detects PSOs based on minimum velocity or direction inversion. We'll use that here on our just simulated data. 
 
 ```{r, fig.width=16, fig.height=8}
 # STEP 1: Detect saccades with EK algorithm and we'll see how PSOs are detected as saccades
@@ -339,7 +339,7 @@ simulated_sac <- saccade_simulator(fixpos_xy = fixpos_xy_Nystrom,
                                                        nrow = 1, ncol = 8, byrow = TRUE), 
                                    fix_params = matrix(data = rep(c(0.01, 10, 0, 0, FALSE), 2), 
                                                        nrow = 2, ncol = 5, byrow = TRUE), 
-                                   noise_to_saccades_sd = 0.1, 
+                                   noise_to_saccades_sd = 0, 
                                    smooth_to_fixation = TRUE,
                                    pix_per_dva = screen_ppd, 
                                    sampling_rate = samp_freq, do_plot = FALSE)  
