@@ -8,4 +8,4 @@ At this point it contains:
 - Direction- and velocity-based PSO detection add-on for the Engbert-Kliegl algorithm for microsaccade detection.
 - Saccade and PSO detection using linear classifiers trained on simulated saccade data.
 
-To see how the functions work, see the Rmarkdown file [ModelingDetectionOfPSOs.md](../blob/main/ModelingDetectionOfPSOs.md). 
+To see how the functions work, see the Rmarkdown file [ModelingDetectionOfPSOs.md](../main/ModelingDetectionOfPSOs.md). 
