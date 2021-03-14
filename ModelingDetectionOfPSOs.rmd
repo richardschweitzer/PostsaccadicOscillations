@@ -67,12 +67,15 @@ Okay, great, shall we look at an empirically measured saccade? Here we load a ra
 load("some_sac.rda")
 # what does this saccade look like?
 plot(some_sac$time_sacon, some_sac$x_sacon, col = "darkgreen", 
-     type = "p", xlab = "Time [ms]", ylab = "Position [dva]")
+     type = "p", xlab = "Time after saccade onset [ms]", ylab = "Position [dva]")
 points(some_sac$time_sacon, some_sac$y_sacon, col = "darkblue")
+legend(-40, -8, legend=c("X coord", "Y coord"),
+       col=c("darkgreen", "darkblue"), pch = c(1, 1))
+
 # alternatively, a trajectory that we can fit
 plot(some_sac$time_sacon[some_sac$time_sacon>=0], 
      some_sac$dist_sacon[some_sac$time_sacon>=0], 
-     col = "black", type = "p", xlab = "Time [ms]", ylab = "Position [dva]")
+     col = "black", type = "p", xlab = "Time after saccade onset [ms]", ylab = "Position [dva]")
 ```
 
 Now try fitting Method 1. Run an optimizer with a grid of different starting parameters.
@@ -96,7 +99,7 @@ best_PSO_model <- get_best_NLS(df = some_sac[some_sac$time_sacon>=0, ],
                                start_params_low = c(xm = 7, A = 0.02, gamma0 = 0.05, k0 = 0.01),
                                start_params_high = c(xm = 12, A = 0.08, gamma0 = 0.2, k0 = 0.1),
                                absolute_lowest = c(xm = 10e-6, A = 10e-6, gamma0 = 10e-6, k0 = 10e-6),
-                               start_params_n = 4, use_robust = FALSE, 
+                               start_params_n = 3, use_robust = FALSE, 
                                debug_mode = FALSE)
 nrow(best_PSO_model$start_params) # number of all combinations of starting parameters
 best_PSO_model$best_fit # the best model
@@ -175,6 +178,7 @@ Using the model function above, we can simulate saccades with post-saccadic osci
 
 ```{r}
 library(ggplot2)
+library(viridis)
 source("self_avoiding_walk.R")
 # discrete
 walked_discrete <- self_avoiding_walk(n_steps = 100, 
@@ -273,7 +277,8 @@ source("check_for_PSO.R")
 par(mfrow=c(1,2)) 
 # x 
 plot(simulator_results[[1]]$time, simulator_results[[1]]$x, 
-     xlab = "Time [ms]", ylab = "X position [pix]")
+     xlab = "Time [ms]", ylab = "X position [pix]", 
+     cex.lab = 1.2, cex.axis = 1.2)
 abline(v = simulator_results[[1]]$time[PSO_EK_results[,1]], col = "black", lty = 2)
 abline(v = simulator_results[[1]]$time[PSO_EK_results[,8]], col = "red")
 abline(v = simulator_results[[1]]$time[PSO_EK_results[,10]], col = "blue")
@@ -284,10 +289,11 @@ legend("bottomright",
                 "PSO onset (minimum velocity)", 
                 "PSO offset"),
        col=c("black", "red", "blue", "black"), 
-       lty=c("dashed", "solid", "solid", "solid"), cex=0.8)
+       lty=c("dashed", "solid", "solid", "solid"), cex=1.2)
 # y
 plot(simulator_results[[1]]$time, simulator_results[[1]]$y, 
-     xlab = "Time [ms]", ylab = "Y position [pix]")
+     xlab = "Time [ms]", ylab = "Y position [pix]", 
+     cex.lab = 1.2, cex.axis = 1.2)
 abline(v = simulator_results[[1]]$time[PSO_EK_results[,1]], col = "black", lty = 2)
 abline(v = simulator_results[[1]]$time[PSO_EK_results[,8]], col = "red")
 abline(v = simulator_results[[1]]$time[PSO_EK_results[,10]], col = "blue")
@@ -307,4 +313,120 @@ simulator_results[[1]]$time[PSO_EK_results[,2]] # PSO offset detected by the EK 
 
 ## PSO detection using linear classifiers trained on simulation data
 
-TO DO
+As a first step, we take some empirically measured saccade with unknown coding and use our saccade simulator to produce an artificial saccade that looks similar.
+
+```{r, fig.width=16, fig.height=8}
+# The Nystrom saccade was collected with these settings here:
+samp_freq <- 500
+monitor.dist <- 67
+monitor.width <- 38
+monitor.resx <- 1024
+monitor.resy <- 768
+screen_center <- data.frame(x = monitor.resx/2, y = monitor.resy/2)
+(screen_ppd <- monitor.dist*tan(1*pi/180)/(monitor.width/monitor.resx))
+
+# determine the fixation data from the hand-labeled saccade from above
+fixpos_xy_Nystrom <-  matrix(data = c(median(some_sac[time_sacon<0, x]), 
+                                      median(some_sac[time_sacon<0, y]), 
+                                      sum(diff(some_sac[time_sacoff>0, time])), 
+                                      median(some_sac[time_sacoff>0, x]), 
+                                      median(some_sac[time_sacoff>0, y]), 
+                                      sum(diff(some_sac[time_sacon<=0, time])) ), 
+                             nrow = 2, ncol = 3, byrow = TRUE)
+# Now, let's simulate a saccade that looks similar
+simulated_sac <- saccade_simulator(fixpos_xy = fixpos_xy_Nystrom, 
+                                   sac_params = matrix(data = c(1, 2, 0.04, 0.15, 0.035, 0.5, 3, FALSE),
+                                                       nrow = 1, ncol = 8, byrow = TRUE), 
+                                   fix_params = matrix(data = rep(c(0.01, 10, 0, 0, FALSE), 2), 
+                                                       nrow = 2, ncol = 5, byrow = TRUE), 
+                                   noise_to_saccades_sd = 0.1, 
+                                   smooth_to_fixation = TRUE,
+                                   pix_per_dva = screen_ppd, 
+                                   sampling_rate = samp_freq, do_plot = FALSE)  
+simulated_sac
+
+# combine original and simulated data
+data_orig_long <- melt.data.table(data = some_sac, 
+                                  id.vars = c("time", "what"), measure.vars = c("x", "y"), 
+                                  variable.name = "coordinate", value.name = "val")
+data_orig_long$time <-  data_orig_long$time - data_orig_long$time[1]
+data_orig_long$which_data <- "Original data"
+data_orig_long$what <- "Unknown"
+data_simul_long <- melt.data.table(data = simulated_sac[[1]], 
+                                   id.vars = c("time", "what"), measure.vars = c("x", "y"), 
+                                   variable.name = "coordinate", value.name = "val")
+data_simul_long$which_data <- "Simulated data"
+data_both_long <- rbind(data_orig_long, data_simul_long)
+# plot both next to each other
+ggplot(data = data_both_long, 
+       aes(x = time, y = val, color = what, shape = coordinate)) + 
+   geom_point(size = 3, alpha = 0.8) + 
+   theme_classic(base_size = 18) + 
+   theme(legend.position = "bottom", 
+         legend.direction = "horizontal") + 
+   labs(x = "Time [ms]", y = "Position [pix]", color = "Model-based coding", shape = "Coordinate") + 
+   scale_color_viridis_d(option = "B", begin = 0.4, end = 0.8, direction = -1) + 
+   facet_wrap(~which_data) 
+```
+
+Now we can extract the features. Features and labels of the simulated data can be used for training. The trained classifier will then predict the labels based on the features of the original data.
+
+```{r}
+library(LiblineaR) # for the support-vector machines
+library(circular) # for direction variance
+source("extract_features.R")
+use_window_sizes_ms = c(50, 100) # need to specify the widths [ms] of the integration windows
+
+# extract some features from the TEST data
+extracted_test_features <- extract_features(x = some_sac$x, 
+                                            y = some_sac$y, 
+                                            time = some_sac$time, 
+                                            pix_per_dva = screen_ppd, 
+                                            window_sizes_ms = use_window_sizes_ms, 
+                                            do_scale = TRUE) # SVM like scaled data
+extracted_test_labels <- some_sac$what # these are the manually coded labels (by Marcus Nystrom)
+test_index <- which(complete.cases(extracted_test_features))
+head(extracted_test_features[test_index])
+
+# extract some features from the TEST data
+extracted_train_features <- extract_features(x = simulated_sac[[1]]$x, 
+                                             y = simulated_sac[[1]]$y, 
+                                             time = simulated_sac[[1]]$time, 
+                                             pix_per_dva = screen_ppd, 
+                                             window_sizes_ms = use_window_sizes_ms, 
+                                             do_scale = TRUE)
+extracted_train_labels <- simulated_sac[[1]]$what # training labels!
+train_index <- which(complete.cases(extracted_train_features))
+head(extracted_train_features[train_index])
+
+# estimate the best cost of constraints violation heuristically with heuristicC
+C_now <- heuristicC(as.matrix(extracted_train_features[train_index, ]))
+                                                       
+# now train the classifier
+trained_classifier <- LiblineaR(data = extracted_train_features[train_index, ], 
+                                target = extracted_train_labels[train_index], 
+                                type = 2, cost = C_now)
+
+# now lets classifier predict
+predicted_classes <- as.character(predict(object = trained_classifier, 
+                                          newx = as.matrix(extracted_test_features[test_index, ]) )$predictions)
+
+# show the resulting confusion matrix:
+table(extracted_test_labels[test_index], predicted_classes, 
+      dnn = c("hand-labeled by Nystrom", "predicted by SVM"))
+
+# show the results
+ggplot(data = some_sac[test_index], 
+       aes(x = time_sacon, y = dist_sacon, color = predicted_classes, shape = what)) + 
+   geom_point(size = 3, alpha = 0.8) + 
+   theme_classic() + theme(legend.position = "right", 
+                           legend.direction = "vertical") + 
+   labs(x = "Time re manually coded saccade onset [ms]", y = "Position [dva]", 
+        color = "SVM-predicted labels", shape = "Manually coded labels") + 
+   scale_color_viridis_d(option = "B", begin = 0.4, end = 0.8, direction = -1)
+```
+
+Now that's lovely, right? 
+
+If any of the techniques described here appeal to you, feel free to use them and cite our book chapter: 
+**"Definition, modeling and detection of saccades in the face of post-saccadic oscillations", by Richard Schweitzer and Martin Rolfs**

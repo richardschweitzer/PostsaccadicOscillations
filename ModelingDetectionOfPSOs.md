@@ -78,8 +78,10 @@ database by Nystrom and colleagues, found here:
 load("some_sac.rda")
 # what does this saccade look like?
 plot(some_sac$time_sacon, some_sac$x_sacon, col = "darkgreen", 
-     type = "p", xlab = "Time [ms]", ylab = "Position [dva]")
+     type = "p", xlab = "Time after saccade onset [ms]", ylab = "Position [dva]")
 points(some_sac$time_sacon, some_sac$y_sacon, col = "darkblue")
+legend(-40, -8, legend=c("X coord", "Y coord"),
+       col=c("darkgreen", "darkblue"), pch = c(1, 1))
 ```
 
 ![](ModelingDetectionOfPSOs_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
@@ -88,7 +90,7 @@ points(some_sac$time_sacon, some_sac$y_sacon, col = "darkblue")
 # alternatively, a trajectory that we can fit
 plot(some_sac$time_sacon[some_sac$time_sacon>=0], 
      some_sac$dist_sacon[some_sac$time_sacon>=0], 
-     col = "black", type = "p", xlab = "Time [ms]", ylab = "Position [dva]")
+     col = "black", type = "p", xlab = "Time after saccade onset [ms]", ylab = "Position [dva]")
 ```
 
 ![](ModelingDetectionOfPSOs_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->
@@ -115,12 +117,12 @@ best_PSO_model <- get_best_NLS(df = some_sac[some_sac$time_sacon>=0, ],
                                start_params_low = c(xm = 7, A = 0.02, gamma0 = 0.05, k0 = 0.01),
                                start_params_high = c(xm = 12, A = 0.08, gamma0 = 0.2, k0 = 0.1),
                                absolute_lowest = c(xm = 10e-6, A = 10e-6, gamma0 = 10e-6, k0 = 10e-6),
-                               start_params_n = 4, use_robust = FALSE, 
+                               start_params_n = 3, use_robust = FALSE, 
                                debug_mode = FALSE)
 nrow(best_PSO_model$start_params) # number of all combinations of starting parameters
 ```
 
-    ## [1] 256
+    ## [1] 81
 
 ``` r
 best_PSO_model$best_fit # the best model
@@ -133,7 +135,7 @@ best_PSO_model$best_fit # the best model
     ## 8.73950 0.03456 0.15544 0.01434 
     ##  residual sum-of-squares: 1.424
     ## 
-    ## Number of iterations to convergence: 13 
+    ## Number of iterations to convergence: 12 
     ## Achieved convergence tolerance: 1.49e-08
 
 ``` r
@@ -296,6 +298,12 @@ fixational drift? Yes, there is a model by Engbert and colleagues, see
 
 ``` r
 library(ggplot2)
+library(viridis)
+```
+
+    ## Loading required package: viridisLite
+
+``` r
 source("self_avoiding_walk.R")
 # discrete
 walked_discrete <- self_avoiding_walk(n_steps = 100, 
@@ -366,8 +374,8 @@ head(simulator_results[[1]]) # raw position data
     ## 1: 150.0000  99.0    0  FIX
     ## 2: 150.3333 100.0    1  FIX
     ## 3: 150.0000 100.0    2  FIX
-    ## 4: 149.8000 100.0    3  FIX
-    ## 5: 149.6000  99.8    4  FIX
+    ## 4: 150.2000 100.0    3  FIX
+    ## 5: 150.0000  99.8    4  FIX
     ## 6: 149.8000  99.4    5  FIX
 
 ``` r
@@ -375,12 +383,12 @@ head(simulator_results[[2]]) # fixation and saccade metrics
 ```
 
     ##    t_fixon  x_fixon  y_fixon t_fixoff t_sacon  x_sacon  y_sacon t_sacoff
-    ## 1:       0 150.0000 100.0000      150     151 151.0000 100.0000    255.7
-    ## 2:     257 748.0275 119.9341      537     538 747.0275 118.9341    634.2
-    ## 3:     636 501.1229 498.2677      836     NaN      NaN      NaN      NaN
+    ## 1:       0 150.0000 100.0000      150     151 150.0000  99.0000    255.7
+    ## 2:     257 748.0344 119.9312      537     538 749.0344 121.9312    634.1
+    ## 3:     636 501.1396 498.2699      836     NaN      NaN      NaN      NaN
     ##    t_sacoff_PSO x_sacoff y_sacoff sac_vpeak sac_vmean
-    ## 1:        222.0 748.0275 119.9341  620.4277  256.8209
-    ## 2:        601.1 501.1229 498.2677  538.7308  217.2300
+    ## 1:        222.1 748.0344 119.9312  620.9659  256.9775
+    ## 2:        601.0 501.1396 498.2699  537.8644  217.0725
     ## 3:          NaN      NaN      NaN       NaN       NaN
 
 ## Velocity-based saccade and PSO detection
@@ -409,14 +417,14 @@ source("microsacc.R") # from MS toolbox. Original algorithm
 ```
 
     ## $table
-    ##      [,1] [,2]      [,3]        [,4]       [,5]        [,6]       [,7]
-    ## [1,]  157  219 15486.987  621.041834  20.735954  621.041834  20.735954
-    ## [2,]  230  240  1459.598  -13.991800  -0.467172  -13.991800  -0.467172
-    ## [3,]  544  599 13445.016 -259.237781 399.901506 -259.237781 399.901506
-    ## [4,]  608  620  1442.506    8.822538 -13.609691    8.822538 -13.609691
+    ##      [,1] [,2]      [,3]       [,4]        [,5]       [,6]        [,7]
+    ## [1,]  157  219 15500.805  621.95709  21.7684982  621.95709  21.7684982
+    ## [2,]  230  240  1459.128  -13.99162  -0.4897066  -13.99162  -0.4897066
+    ## [3,]  544  599 13423.249 -261.42839 396.8846360 -261.42839 396.8846360
+    ## [4,]  608  620  1442.366    8.91810 -13.5389153    8.91810 -13.5389153
     ## 
     ## $radius
-    ## [1] 1200.000 1066.667
+    ## [1] 1236.085 1066.667
 
 ``` r
 # STEP 2: 1st Add-on. Detect clusters of saccades. 
@@ -429,8 +437,8 @@ source("check_for_sac_clustering.R")
 ```
 
     ##      [,1] [,2]     [,3]      [,4]      [,5]      [,6]      [,7]
-    ## [1,]  157  240 15486.99  607.0500  20.26878  607.0500  20.26878
-    ## [2,]  544  620 13445.02 -250.4152 386.29182 -250.4152 386.29182
+    ## [1,]  157  240 15500.80  607.9655  21.27879  607.9655  21.27879
+    ## [2,]  544  620 13423.25 -252.5103 383.34572 -252.5103 383.34572
 
 ``` r
 # STEP 3: 2nd Add-on. Run PSO detection the clustered saccade data. 
@@ -448,18 +456,19 @@ source("check_for_PSO.R")
 ```
 
     ##      [,1] [,2]     [,3]      [,4]      [,5]      [,6]      [,7] [,8]       [,9]
-    ## [1,]  157  240 15486.99  607.0500  20.26878  607.0500  20.26878  224   1.912337
-    ## [2,]  544  620 13445.02 -250.4152 386.29182 -250.4152 386.29182  603 122.953489
+    ## [1,]  157  240 15500.80  607.9655  21.27879  607.9655  21.27879  224   2.004534
+    ## [2,]  544  620 13423.25 -252.5103 383.34572 -252.5103 383.34572  603 123.372945
     ##      [,10]    [,11]
-    ## [1,]   223 115.3484
-    ## [2,]   602 147.4629
+    ## [1,]   223 131.9229
+    ## [2,]   602 121.9097
 
 ``` r
 # PLOT the detection results:
 par(mfrow=c(1,2)) 
 # x 
 plot(simulator_results[[1]]$time, simulator_results[[1]]$x, 
-     xlab = "Time [ms]", ylab = "X position [pix]")
+     xlab = "Time [ms]", ylab = "X position [pix]", 
+     cex.lab = 1.2, cex.axis = 1.2)
 abline(v = simulator_results[[1]]$time[PSO_EK_results[,1]], col = "black", lty = 2)
 abline(v = simulator_results[[1]]$time[PSO_EK_results[,8]], col = "red")
 abline(v = simulator_results[[1]]$time[PSO_EK_results[,10]], col = "blue")
@@ -470,10 +479,11 @@ legend("bottomright",
                 "PSO onset (minimum velocity)", 
                 "PSO offset"),
        col=c("black", "red", "blue", "black"), 
-       lty=c("dashed", "solid", "solid", "solid"), cex=0.8)
+       lty=c("dashed", "solid", "solid", "solid"), cex=1.2)
 # y
 plot(simulator_results[[1]]$time, simulator_results[[1]]$y, 
-     xlab = "Time [ms]", ylab = "Y position [pix]")
+     xlab = "Time [ms]", ylab = "Y position [pix]", 
+     cex.lab = 1.2, cex.axis = 1.2)
 abline(v = simulator_results[[1]]$time[PSO_EK_results[,1]], col = "black", lty = 2)
 abline(v = simulator_results[[1]]$time[PSO_EK_results[,8]], col = "red")
 abline(v = simulator_results[[1]]$time[PSO_EK_results[,10]], col = "blue")
@@ -490,7 +500,7 @@ par(mfrow=c(1,1))
 simulator_results[[2]]$t_sacoff_PSO[1:2] # ground truth PSO onset
 ```
 
-    ## [1] 222.0 601.1
+    ## [1] 222.1 601.0
 
 ``` r
 simulator_results[[1]]$time[PSO_EK_results[,8]] # PSO onset detected by direction-inversion
@@ -509,7 +519,7 @@ simulator_results[[1]]$time[PSO_EK_results[,10]] # PSO onset detected by minimum
 simulator_results[[2]]$t_sacoff[1:2] # ground truth PSO offset
 ```
 
-    ## [1] 255.7 634.2
+    ## [1] 255.7 634.1
 
 ``` r
 simulator_results[[1]]$time[PSO_EK_results[,2]] # PSO offset detected by the EK algorithm
@@ -519,4 +529,252 @@ simulator_results[[1]]$time[PSO_EK_results[,2]] # PSO offset detected by the EK 
 
 ## PSO detection using linear classifiers trained on simulation data
 
-TO DO
+As a first step, we take some empirically measured saccade with unknown
+coding and use our saccade simulator to produce an artificial saccade
+that looks similar.
+
+``` r
+# The Nystrom saccade was collected with these settings here:
+samp_freq <- 500
+monitor.dist <- 67
+monitor.width <- 38
+monitor.resx <- 1024
+monitor.resy <- 768
+screen_center <- data.frame(x = monitor.resx/2, y = monitor.resy/2)
+(screen_ppd <- monitor.dist*tan(1*pi/180)/(monitor.width/monitor.resx))
+```
+
+    ## [1] 31.51466
+
+``` r
+# determine the fixation data from the hand-labeled saccade from above
+fixpos_xy_Nystrom <-  matrix(data = c(median(some_sac[time_sacon<0, x]), 
+                                      median(some_sac[time_sacon<0, y]), 
+                                      sum(diff(some_sac[time_sacoff>0, time])), 
+                                      median(some_sac[time_sacoff>0, x]), 
+                                      median(some_sac[time_sacoff>0, y]), 
+                                      sum(diff(some_sac[time_sacon<=0, time])) ), 
+                             nrow = 2, ncol = 3, byrow = TRUE)
+# Now, let's simulate a saccade that looks similar
+simulated_sac <- saccade_simulator(fixpos_xy = fixpos_xy_Nystrom, 
+                                   sac_params = matrix(data = c(1, 2, 0.04, 0.15, 0.035, 0.5, 3, FALSE),
+                                                       nrow = 1, ncol = 8, byrow = TRUE), 
+                                   fix_params = matrix(data = rep(c(0.01, 10, 0, 0, FALSE), 2), 
+                                                       nrow = 2, ncol = 5, byrow = TRUE), 
+                                   noise_to_saccades_sd = 0.1, 
+                                   smooth_to_fixation = TRUE,
+                                   pix_per_dva = screen_ppd, 
+                                   sampling_rate = samp_freq, do_plot = FALSE)  
+simulated_sac
+```
+
+    ## [[1]]
+    ##             x        y time what
+    ##   1: 951.3472 704.0455    0  FIX
+    ##   2: 951.0139 703.0455    2  FIX
+    ##   3: 951.3472 703.0455    4  FIX
+    ##   4: 951.5472 703.0455    6  FIX
+    ##   5: 951.7472 703.2455    8  FIX
+    ##  ---                            
+    ##  97: 684.6500 638.2496  192  FIX
+    ##  98: 685.0500 638.4496  194  FIX
+    ##  99: 685.2500 638.8496  196  FIX
+    ## 100: 685.3167 639.5162  198  FIX
+    ## 101: 684.6500 639.8496  200  FIX
+    ## 
+    ## [[2]]
+    ##    t_fixon  x_fixon  y_fixon t_fixoff t_sacon  x_sacon  y_sacon t_sacoff
+    ## 1:       0 951.3472 703.0455       80      82 951.3472 705.0455    156.9
+    ## 2:     158 684.6500 638.8496      200     NaN      NaN      NaN      NaN
+    ##    t_sacoff_PSO x_sacoff y_sacoff sac_vpeak sac_vmean
+    ## 1:        122.6   684.65 638.8496  404.6615  145.4744
+    ## 2:          NaN      NaN      NaN       NaN       NaN
+
+``` r
+# combine original and simulated data
+data_orig_long <- melt.data.table(data = some_sac, 
+                                  id.vars = c("time", "what"), measure.vars = c("x", "y"), 
+                                  variable.name = "coordinate", value.name = "val")
+data_orig_long$time <-  data_orig_long$time - data_orig_long$time[1]
+data_orig_long$which_data <- "Original data"
+data_orig_long$what <- "Unknown"
+data_simul_long <- melt.data.table(data = simulated_sac[[1]], 
+                                   id.vars = c("time", "what"), measure.vars = c("x", "y"), 
+                                   variable.name = "coordinate", value.name = "val")
+data_simul_long$which_data <- "Simulated data"
+data_both_long <- rbind(data_orig_long, data_simul_long)
+# plot both next to each other
+ggplot(data = data_both_long, 
+       aes(x = time, y = val, color = what, shape = coordinate)) + 
+   geom_point(size = 3, alpha = 0.8) + 
+   theme_classic(base_size = 18) + 
+   theme(legend.position = "bottom", 
+         legend.direction = "horizontal") + 
+   labs(x = "Time [ms]", y = "Position [pix]", color = "Model-based coding", shape = "Coordinate") + 
+   scale_color_viridis_d(option = "B", begin = 0.4, end = 0.8, direction = -1) + 
+   facet_wrap(~which_data) 
+```
+
+![](ModelingDetectionOfPSOs_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
+Now we can extract the features. Features and labels of the simulated
+data can be used for training. The trained classifier will then predict
+the labels based on the features of the original data.
+
+``` r
+library(LiblineaR) # for the support-vector machines
+library(circular) # for direction variance
+```
+
+    ## 
+    ## Attaching package: 'circular'
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     sd, var
+
+``` r
+source("extract_features.R")
+use_window_sizes_ms = c(50, 100) # need to specify the widths [ms] of the integration windows
+
+# extract some features from the TEST data
+extracted_test_features <- extract_features(x = some_sac$x, 
+                                            y = some_sac$y, 
+                                            time = some_sac$time, 
+                                            pix_per_dva = screen_ppd, 
+                                            window_sizes_ms = use_window_sizes_ms, 
+                                            do_scale = TRUE) # SVM like scaled data
+extracted_test_labels <- some_sac$what # these are the manually coded labels (by Marcus Nystrom)
+test_index <- which(complete.cases(extracted_test_features))
+head(extracted_test_features[test_index])
+```
+
+    ##    meddiff_50 meandiff_50     std_50     rms_50 dispersion_50    bcea_50
+    ## 1: -0.6410431  -0.7794639 -0.6426080 -0.7455822    -0.6915838 -0.6202779
+    ## 2: -0.6441711  -0.7844239 -0.6409197 -0.7476865    -0.6915497 -0.6175952
+    ## 3: -0.6452347  -0.7972892 -0.6406763 -0.7476287    -0.6915430 -0.6169552
+    ## 4: -0.6460092  -0.7745960 -0.6412362 -0.7471301    -0.6915430 -0.6177560
+    ## 5: -0.6500297  -0.7730492 -0.6424439 -0.7454893    -0.6915430 -0.6195248
+    ## 6: -0.6521944  -0.7268885 -0.6427554 -0.7444203    -0.6915430 -0.6201368
+    ##    ray_test_50  dirvar_50     vel_50     acc_50 rms_diff_50 std_diff_50
+    ## 1:   0.8195280 -0.8195280 -0.5052293 -0.4828131  -1.1680439  -1.0115598
+    ## 2:   0.6051470 -0.6051470 -0.5178075 -0.5095838  -0.8927962  -0.9893516
+    ## 3:   0.7292235 -0.7292235 -0.5077505 -0.5049480  -0.3093324  -0.8198334
+    ## 4:   0.8053441 -0.8053441 -0.5017834 -0.4730085   0.2299638  -0.6516775
+    ## 5:   0.7458724 -0.7458724 -0.4843913 -0.4505405   0.2712057  -0.6436085
+    ## 6:   0.6010426 -0.6010426 -0.4822982 -0.4928098   0.5511328  -0.4452140
+    ##    bcea_diff_50 meddiff_100 meandiff_100    std_100    rms_100 dispersion_100
+    ## 1:   -0.9656977  -1.0749421  -0.27126837 -0.9939032 -1.2067681     -1.1303023
+    ## 2:   -0.9413777  -0.9907174  -0.20642883 -0.9785692 -0.9759703     -1.0757516
+    ## 3:   -0.8478523  -0.8522409  -0.14171854 -0.8466718 -0.3564764     -0.8098744
+    ## 4:   -0.7337198  -0.6497364  -0.07770300 -0.7183339  0.1482040     -0.5726919
+    ## 5:   -0.7284663  -0.4093404  -0.01421899 -0.7183339  0.1482040     -0.5726919
+    ## 6:   -0.4723886  -0.2088119   0.04855028 -0.5717110  0.4950609     -0.3716901
+    ##      bcea_100 ray_test_100 dirvar_100    vel_100    acc_100 rms_diff_100
+    ## 1: -0.9870010    1.5110886 -1.5110886 -0.5582185 -0.5269368     1.139200
+    ## 2: -0.9691912    1.4746847 -1.4746847 -0.5498126 -0.5388674     1.197483
+    ## 3: -0.8834083    1.1458598 -1.1458598 -0.5400451 -0.5368709     1.151036
+    ## 4: -0.7915982    0.7460734 -0.7460734 -0.5460846 -0.5333817     1.173555
+    ## 5: -0.7915982    0.3110422 -0.3110422 -0.5475537 -0.5380201     1.191767
+    ## 6: -0.5974594    0.3809456 -0.3809456 -0.5461095 -0.5558578     1.185396
+    ##    std_diff_100 bcea_diff_100
+    ## 1:    0.9470323     0.9505302
+    ## 2:    0.9807060     0.9824923
+    ## 3:    1.0006894     0.9959841
+    ## 4:    1.0169542     1.0100229
+    ## 5:    1.0286999     1.0209597
+    ## 6:    1.0356609     1.0260319
+
+``` r
+# extract some features from the TEST data
+extracted_train_features <- extract_features(x = simulated_sac[[1]]$x, 
+                                             y = simulated_sac[[1]]$y, 
+                                             time = simulated_sac[[1]]$time, 
+                                             pix_per_dva = screen_ppd, 
+                                             window_sizes_ms = use_window_sizes_ms, 
+                                             do_scale = TRUE)
+extracted_train_labels <- simulated_sac[[1]]$what # training labels!
+train_index <- which(complete.cases(extracted_train_features))
+head(extracted_train_features[train_index])
+```
+
+    ##    meddiff_50 meandiff_50     std_50     rms_50 dispersion_50    bcea_50
+    ## 1: -0.6362824  -0.7769877 -0.6178273 -0.7230758    -0.6704278 -0.6157078
+    ## 2: -0.6394919  -0.7792679 -0.6179461 -0.7218610    -0.6704278 -0.6159650
+    ## 3: -0.6394919  -0.7808862 -0.6180664 -0.7226811    -0.6704278 -0.6161971
+    ## 4: -0.6394919  -0.7810142 -0.6182331 -0.7243002    -0.6704278 -0.6163537
+    ## 5: -0.6383513  -0.7799234 -0.6182054 -0.7244738    -0.6704278 -0.6161642
+    ## 6: -0.6386789  -0.7793466 -0.6181099 -0.7246285    -0.6704278 -0.6160567
+    ##    ray_test_50 dirvar_50     vel_50     acc_50 rms_diff_50 std_diff_50
+    ## 1:  -1.2397505 1.2397505 -0.4801916 -0.4181431   -1.044701  -0.9606285
+    ## 2:  -0.9216861 0.9216861 -0.4767882 -0.4317023   -1.085430  -0.9609396
+    ## 3:  -0.6102393 0.6102393 -0.4785903 -0.4345266   -1.101995  -0.9609739
+    ## 4:  -0.4308186 0.4308186 -0.4934494 -0.5948759   -1.109807  -0.9615835
+    ## 5:  -0.3246952 0.3246952 -0.4905223 -0.5998202   -1.111466  -0.9609254
+    ## 6:  -0.3744502 0.3744502 -0.4833056 -0.5729061   -1.118155  -0.9609490
+    ##    bcea_diff_50 meddiff_100 meandiff_100    std_100   rms_100 dispersion_100
+    ## 1:   -0.9602083   -1.064314    -1.603859 -0.9744997 -1.216003      -1.119689
+    ## 2:   -0.9560411   -1.068543    -1.572235 -0.9741745 -1.216337      -1.118135
+    ## 3:   -0.9550177   -1.067741    -1.533524 -0.9740886 -1.217923      -1.118135
+    ## 4:   -0.9550342   -1.066938    -1.488023 -0.9741563 -1.219421      -1.118135
+    ## 5:   -0.9539302   -1.066005    -1.436781 -0.9743632 -1.219920      -1.118135
+    ## 6:   -0.9539155   -1.065650    -1.380576 -0.9744315 -1.219209      -1.118135
+    ##      bcea_100 ray_test_100  dirvar_100    vel_100    acc_100 rms_diff_100
+    ## 1: -0.9717656   0.03021838 -0.03021838 -0.5366687 -0.4919831   -1.6073629
+    ## 2: -0.9713181  -0.34447507  0.34447507 -0.5345910 -0.5193903   -1.0636547
+    ## 3: -0.9712339  -0.75223743  0.75223743 -0.5328264 -0.5366773   -0.5619117
+    ## 4: -0.9713593  -0.91609049  0.91609049 -0.5316095 -0.5461172   -0.1319090
+    ## 5: -0.9716640  -0.69326571  0.69326571 -0.5348590 -0.5539544    0.2284271
+    ## 6: -0.9717406  -0.44346720  0.44346720 -0.5315644 -0.5495935    0.5174050
+    ##    std_diff_100 bcea_diff_100
+    ## 1:    -2.182909     -2.211632
+    ## 2:    -2.004307     -2.030148
+    ## 3:    -1.807647     -1.832747
+    ## 4:    -1.595569     -1.620024
+    ## 5:    -1.369813     -1.392481
+    ## 6:    -1.137916     -1.158721
+
+``` r
+# estimate the best cost of constraints violation heuristically with heuristicC
+C_now <- heuristicC(as.matrix(extracted_train_features[train_index, ]))
+                                                       
+# now train the classifier
+trained_classifier <- LiblineaR(data = extracted_train_features[train_index, ], 
+                                target = extracted_train_labels[train_index], 
+                                type = 2, cost = C_now)
+
+# now lets classifier predict
+predicted_classes <- as.character(predict(object = trained_classifier, 
+                                          newx = as.matrix(extracted_test_features[test_index, ]) )$predictions)
+
+# show the resulting confusion matrix:
+table(extracted_test_labels[test_index], predicted_classes, 
+      dnn = c("hand-labeled by Nystrom", "predicted by SVM"))
+```
+
+    ##                        predicted by SVM
+    ## hand-labeled by Nystrom FIX PSO SAC
+    ##                     FIX  55   5   0
+    ##                     PSO   3  11   2
+    ##                     SAC   2   0  18
+
+``` r
+# show the results
+ggplot(data = some_sac[test_index], 
+       aes(x = time_sacon, y = dist_sacon, color = predicted_classes, shape = what)) + 
+   geom_point(size = 3, alpha = 0.8) + 
+   theme_classic() + theme(legend.position = "right", 
+                           legend.direction = "vertical") + 
+   labs(x = "Time re manually coded saccade onset [ms]", y = "Position [dva]", 
+        color = "SVM-predicted labels", shape = "Manually coded labels") + 
+   scale_color_viridis_d(option = "B", begin = 0.4, end = 0.8, direction = -1)
+```
+
+![](ModelingDetectionOfPSOs_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
+Now that’s lovely, right?
+
+If any of the techniques described here appeal to you, feel free to use
+them and cite our book chapter: **“Definition, modeling and detection of
+saccades in the face of post-saccadic oscillations”, by Richard
+Schweitzer and Martin Rolfs**

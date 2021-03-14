@@ -8,7 +8,7 @@ saccade_simulator <- function(fixpos_xy, # a matrix or data.frame with 3 columns
                               sampling_rate = 1000, # what's the sampling rate we want to achieve?
                               noise_to_saccades_sd = 0, # that's the gaussian noise SD, that can be added to the saccade
                               smooth_to_fixation = TRUE, # smoothes the fixation period to reduce inter-sample noise
-                              do_plot = FALSE
+                              do_plot = FALSE # a plot of the results?
 ) {
   require(assertthat)
   require(data.table)

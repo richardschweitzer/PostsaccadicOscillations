@@ -1,6 +1,6 @@
 # Takes in a EK-algorithm output table (from microsacc.R) and looks for saccade clusters
 # by Richard Schweitzer
-# NOTE: only for the (most common) case of clusters of two saccades, for now.
+# NOTE: only implemented for the (most common) case, i.e., clusters of two saccades, for now.
 
 check_for_sac_clustering <- function(sac_table, n_cluster_samples=50, do_what=1) {
   # check whether there are saccade offsets and saccade onsets are closer than 50 samples..
