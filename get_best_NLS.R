@@ -1,3 +1,5 @@
+# run an optimizer through a grid of different starting parameters and return the best model
+# by Richard Schweitzer
 get_best_NLS <- function(df, model_form, model_control, 
                          start_params_low, start_params_high, 
                          start_params_n, 
@@ -79,9 +81,15 @@ get_best_NLS <- function(df, model_form, model_control,
   best_index <- which(result_params$BIC==min(result_params$BIC, na.rm = TRUE))[1]
   # return values
   if (length(best_index)==1) {
-    return(list(best_fit = model_list[[best_index]], best_params = result_params[best_index]))
+    return(list(best_fit = model_list[[best_index]], 
+                best_params = result_params[best_index], 
+                start_params = start_params,
+                result_params = result_params))
   } else {
-    return(list(best_fit = NULL, best_params = rep(NaN, 5), result_params = result_params))
+    return(list(best_fit = NULL, 
+                best_params = rep(NaN, length(start_params_low)+2), 
+                start_params = start_params,
+                result_params = result_params))
   }
   
 }

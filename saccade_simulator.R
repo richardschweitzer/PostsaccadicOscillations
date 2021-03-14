@@ -1,6 +1,5 @@
 # Saccade simulator, presented in the book chapter "Definition, modeling and detection of saccades in the face of post-saccadic oscillations."
 # implemented by Richard Schweitzer
-
 saccade_simulator <- function(fixpos_xy, # a matrix or data.frame with 3 columns and >=2 rows, the latter each representing one fixation pos and dur
                               sac_params, # same as above, only containing 8 columns and >=1 rows (one less than fixations)
                               fix_params, # also a matrix or data.frame with X columns and >=2 rows, as many as fixations exist
@@ -155,18 +154,66 @@ saccade_simulator <- function(fixpos_xy, # a matrix or data.frame with 3 columns
   if (do_plot) {
     par(mfrow=c(1,2)) 
     # x 
-    plot(resulting_df$time, resulting_df$x )
+    plot(resulting_df$time, resulting_df$x, 
+         xlab = "Time [ms]", ylab = "X position [pix]")
     abline(v = resulting_metrics$t_sacon, col = "black", lty = 2)
     abline(v = resulting_metrics$t_sacoff_PSO, col = "blue")
     abline(v = resulting_metrics$t_sacoff, col = "black")
+    # legend
+    legend("bottomright", 
+           legend=c("Saccade onset", "PSO onset", "PSO offset"),
+           col=c("black", "blue", "black"), 
+           lty=c("dashed", "solid", "solid"), cex=0.8)
     # y
-    plot(resulting_df$time, resulting_df$y, ylim = rev(range(resulting_df$y)) )
+    plot(resulting_df$time, resulting_df$y, ylim = rev(range(resulting_df$y)), 
+         xlab = "Time [ms]", ylab = "Y position [pix]")
     abline(v = resulting_metrics$t_sacon, col = "black", lty = 2)
     abline(v = resulting_metrics$t_sacoff_PSO, col = "blue")
     abline(v = resulting_metrics$t_sacoff, col = "black")
-
     par(mfrow=c(1,1)) 
   }
   # return data
   return(list(resulting_df, resulting_metrics))
+}
+
+
+# AUX functions for the simulator
+xy_to_degree <- function(vx, vy) {
+  # compute direction of movement 360deg. see: http://stackoverflow.com/questions/22421054/determine-movement-vectors-direction-from-velocity
+  deg = atan2(vy, vx)*180/pi # larger y mean downward !
+  deg[deg < 0] <- deg[deg < 0] + 360
+  return(deg)
+}
+
+xy_to_dist <- function(vx, vy) {
+  dist = sqrt(vx^2 + vy^2)
+  return(dist)
+}
+
+degree_to_xy <- function(dist, deg) {
+  x = dist * cos(deg * pi / 180)
+  y = dist * sin(deg * pi / 180)
+  return(list(x, y))
+}
+
+five_point_smoother <- function(x) {
+  N <- length(x)
+  v <- vector(mode = "numeric", length = N)
+  for (r in 1:N) {
+    if (r==N || r == 1) { 
+      v[r] = x[r]
+    } else if (r==N-1 || r == 2) {
+      v[r] = (x[r-1] + x[r] + x[r+1]) / 3
+    } else {
+      v[r] = (x[r-2] + x[r-1] + x[r] + x[r+1] + x[r+2]) / 5
+    }
+  }
+  return(v)
+}
+
+get_vel_vec <- function(pos, t, do_smooth=FALSE) {
+  if (do_smooth) {
+    pos <- five_point_smoother(pos)
+  }
+  return(c(0, diff(pos)) / (c(1, diff(t))/1000))
 }

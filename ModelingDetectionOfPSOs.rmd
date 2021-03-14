@@ -40,7 +40,7 @@ legend(100, 2, legend=c("xm=10", "xm=6", "xm=2"),
 # Replicate Fig. 3 in Bouzat et al. (2018), at least for xm=16
 plot(t_sac, PSO_fit(t_sac = t_sac, xm = 16, beta = 1, mu = 2, A = 0.04, 
                     gamma0 = 0.15, k0 = 0.032, c = 0, d = 0), 
-     col = "black", type = "l", ylim = c(0, 20), 
+     col = "black", type = "l", ylim = c(0, 17), 
      xlab = "Time [ms]", ylab = "Position [dva]")
 lines(t_sac, PSO_fit(t_sac = t_sac, xm = 16, beta = 1, mu = 2, A = 0.04, 
                      gamma0 = 0.15, k0 = 0.032, c = 0.5, d = 3), 
@@ -51,7 +51,7 @@ legend(60, 5, legend=c("constant (c=0, d=0)", "force-dependent (c=0.5, d=3)"),
 # Replicate Fig. 9 in Del Punta et al. (2019)
 plot(t_sac, PSO_fit(t_sac = t_sac, xm = 10, beta = 1, mu = 2, A = 0.036, 
                     gamma0 = 0.14, k0 = 0.04, c = 0.5, d = 3, 
-                    viscosity = FALSE), col = "blue", type = "l", ylim = c(0, 13.5), 
+                    viscosity = FALSE), col = "blue", type = "l", ylim = c(0, 12), 
      xlab = "Time [ms]", ylab = "Position [dva]")
 lines(t_sac, PSO_fit(t_sac = t_sac, xm = 10, beta = 1, mu = 2, A = 0.036, 
                      gamma0 = 0.07, k0 = 0.035, c = 1, d = 5, 
@@ -96,9 +96,10 @@ best_PSO_model <- get_best_NLS(df = some_sac[some_sac$time_sacon>=0, ],
                                start_params_low = c(xm = 7, A = 0.02, gamma0 = 0.05, k0 = 0.01),
                                start_params_high = c(xm = 12, A = 0.08, gamma0 = 0.2, k0 = 0.1),
                                absolute_lowest = c(xm = 10e-6, A = 10e-6, gamma0 = 10e-6, k0 = 10e-6),
-                               start_params_n = 3, use_robust = FALSE, 
+                               start_params_n = 4, use_robust = FALSE, 
                                debug_mode = FALSE)
-best_PSO_model
+nrow(best_PSO_model$start_params) # number of all combinations of starting parameters
+best_PSO_model$best_fit # the best model
 
 # what does this look like?
 plot(some_sac$time_sacon[some_sac$time_sacon>=0],  # data
@@ -168,3 +169,142 @@ legend(60, 4, legend=c("grid-search fit", "LM-refined fit"),
        col=c("blue", "red"), lty=c("dashed", "solid"), cex=0.8)
 ```
 
+## The saccade simulator
+
+Using the model function above, we can simulate saccades with post-saccadic oscillations. But what about fixations? Can we simulate fixational drift? Yes, there is a model by Engbert and colleagues, see https://doi.org/10.1073/pnas.1102730108. It's implemented in the *self_avoiding_walk* function.
+
+```{r}
+library(ggplot2)
+source("self_avoiding_walk.R")
+# discrete
+walked_discrete <- self_avoiding_walk(n_steps = 100, 
+                                      relax_rate = 0.01,
+                                      L = 101, U_slope = 0.2, 
+                                      U_m_sd=c(0.5, 0.2), 
+                                      use_only_direct_neighbors = TRUE, 
+                                      do_plot = TRUE, 
+                                      do_final_smooth = FALSE)
+# smooth version
+walked_smooth <- self_avoiding_walk(n_steps = 100,  
+                                    relax_rate = 0.01, 
+                                    L = 101, U_slope = 0.2, 
+                                    U_m_sd=c(0.5, 0.2), 
+                                    use_only_direct_neighbors = TRUE, 
+                                    do_plot = TRUE, 
+                                    do_final_smooth = TRUE)
+```
+
+Now, there's a easy-to-use package, the saccade simulator. Here we simulate a sequence of two saccades. 
+
+```{r, fig.width=16, fig.height=8}
+source("saccade_simulator.R") # includes main function and aux functions
+
+# Fixation characteristics
+# fixation X, Y [pix], and duration [ms]
+fixpos_xy <- matrix(data = c(150, 100, 150, 
+                             750, 120, 280, 
+                             500, 500, 200), 
+                    nrow = 3, ncol = 3, byrow = TRUE)
+# Saccade model parameters:
+# beta, mu, A, gamma, k, c, d, viscosity; while xm is determined by fixation positions
+sac_params <- matrix(data = c(1, 2.2, 0.04, 0.14, 0.013, 0.5, 3, FALSE, 
+                              1, 2.2, 0.04, 0.14, 0.013, 0.5, 3, FALSE), 
+                     nrow = 2, ncol = 8, byrow = TRUE)
+# Fixation model parameters:
+# relax_rate, U_slope, U_mean, U_sd, direct neighbors only
+fix_params <- matrix(data = rep(c(0.01, 10, 0, 0, FALSE), 
+                                3), 
+                     nrow = 3, ncol = 5, byrow = TRUE)  
+# Now run the saccade simulator:
+simulator_results <- saccade_simulator(fixpos_xy = fixpos_xy, 
+                                       sac_params = sac_params, 
+                                       fix_params = fix_params, 
+                                       pix_per_dva = 25, # pixels per degree, should be matched to setup
+                                       detect_vel_criterion = 5, # ground-truth velocity criterion [dva/s]
+                                       sampling_rate = 1000, # in Hz
+                                       noise_to_saccades_sd = 0, # should Gaussian noise be added to saccades?
+                                       smooth_to_fixation = TRUE, # FALSE: discrete, TRUE: smooth fixation data
+                                       do_plot = TRUE) 
+head(simulator_results[[1]]) # raw position data
+head(simulator_results[[2]]) # fixation and saccade metrics
+```
+
+## Velocity-based saccade and PSO detection
+
+We describe an add-on the widely used Engbert-Kliegl algorithm for microsaccade detection (see http://read.psych.uni-potsdam.de/index.php?option=com_content&view=article&id=140:engbert-et-al-2015-microsaccade-toolbox-for-r&catid=26:publications&Itemid=34 for the original algorithm), which detects PSOs based on minimum velocity or direction inversion. We'll use that here on our just simulated data. 
+
+```{r, fig.width=16, fig.height=8}
+# STEP 1: Detect saccades with EK algorithm and we'll see how PSOs are detected as saccades
+source("vecvel.R") # from MS toolbox. Transforms into 2D velocity space
+source("microsacc.R") # from MS toolbox. Original algorithm
+# Output:
+#  [,1]   saccade onset [index]
+#  [,2]   saccade offset [index]
+#  [,3]   peak velocity (vpeak)
+#  [,4]   horizontal component (dx, i.e., x[off]-x[on])
+#  [,5]   vertical component (dy)
+#  [,6]   horizontal amplitude (dX, i.e., x[max(x)]-x[min(x)])
+#  [,7]   vertical amplitude (dY)
+(original_EK_results <- microsacc(x = as.matrix(cbind(simulator_results[[1]]$x, simulator_results[[1]]$y)), 
+                                  VFAC = 4, MINDUR = 5, SAMPLING = 1000))
+
+# STEP 2: 1st Add-on. Detect clusters of saccades. 
+# Note that this currently only implemented for the (most common) case of clusters of two saccades
+# Here we'll merge the 2nd saccade with the 1st saccade to run PSO detection later.
+source("check_for_sac_clustering.R")
+(clustered_EK_results <- check_for_sac_clustering(sac_table = original_EK_results$table, 
+                                                  n_cluster_samples = 20, # number of samples distance
+                                                  do_what = 2)) # 0: do nothing, 1: eliminate 2nd sac, 2: merge
+
+# STEP 3: 2nd Add-on. Run PSO detection the clustered saccade data. 
+# The algorithm adds 4 columns to the saccade table
+# [,8] direction-inversion sample index
+# [,9] overall saccade direction in degrees
+# [,10] minimum-velocity sample index
+# [,11] minimum velocity detected
+source("check_for_PSO.R")
+(PSO_EK_results <- check_for_PSO(eye_x = simulator_results[[1]]$x, 
+                                 eye_y = simulator_results[[1]]$y, 
+                                 samp_rate = 1000, 
+                                 em_table = clustered_EK_results, 
+                                 direction_range = 60))
+
+# PLOT the detection results:
+par(mfrow=c(1,2)) 
+# x 
+plot(simulator_results[[1]]$time, simulator_results[[1]]$x, 
+     xlab = "Time [ms]", ylab = "X position [pix]")
+abline(v = simulator_results[[1]]$time[PSO_EK_results[,1]], col = "black", lty = 2)
+abline(v = simulator_results[[1]]$time[PSO_EK_results[,8]], col = "red")
+abline(v = simulator_results[[1]]$time[PSO_EK_results[,10]], col = "blue")
+abline(v = simulator_results[[1]]$time[PSO_EK_results[,2]], col = "black")
+# legend
+legend("bottomright", 
+       legend=c("Detected saccade onset", "PSO onset (direction inversion)", 
+                "PSO onset (minimum velocity)", 
+                "PSO offset"),
+       col=c("black", "red", "blue", "black"), 
+       lty=c("dashed", "solid", "solid", "solid"), cex=0.8)
+# y
+plot(simulator_results[[1]]$time, simulator_results[[1]]$y, 
+     xlab = "Time [ms]", ylab = "Y position [pix]")
+abline(v = simulator_results[[1]]$time[PSO_EK_results[,1]], col = "black", lty = 2)
+abline(v = simulator_results[[1]]$time[PSO_EK_results[,8]], col = "red")
+abline(v = simulator_results[[1]]$time[PSO_EK_results[,10]], col = "blue")
+abline(v = simulator_results[[1]]$time[PSO_EK_results[,2]], col = "black")
+par(mfrow=c(1,1)) 
+
+# DETECTION vs GROUND TRUTH
+# PSO onset, probably virtually no mismatch
+simulator_results[[2]]$t_sacoff_PSO[1:2] # ground truth PSO onset
+simulator_results[[1]]$time[PSO_EK_results[,8]] # PSO onset detected by direction-inversion
+simulator_results[[1]]$time[PSO_EK_results[,10]] # PSO onset detected by minimum velocity
+# PSO offset, probably large mismatch, given the difference in velocity thresholds
+simulator_results[[2]]$t_sacoff[1:2] # ground truth PSO offset
+simulator_results[[1]]$time[PSO_EK_results[,2]] # PSO offset detected by the EK algorithm
+```
+
+
+## PSO detection using linear classifiers trained on simulation data
+
+TO DO

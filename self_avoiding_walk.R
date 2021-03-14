@@ -99,7 +99,7 @@ self_avoiding_walk <- function(n_steps=50, # how many steps for the random walk?
   }
   return_this <- data.frame(x = all_j, y = all_i)
   if (do_final_smooth) {
-    five_point_smoother <- function(x) { # 5-point moving window
+    five_point_smoother <- function(x) { # 5-point moving-window smoother
       N <- length(x)
       v <- vector(mode = "numeric", length = N)
       for (r in 1:N) {
@@ -121,15 +121,16 @@ self_avoiding_walk <- function(n_steps=50, # how many steps for the random walk?
     require(ggplot2)
     all_ij <- return_this
     all_ij$step <- 1:nrow(all_ij)
-    all_ij$x_r <- all_ij$x + rnorm(nrow(all_ij), sd = 0.15)
-    all_ij$y_r <- all_ij$y + rnorm(nrow(all_ij), sd = 0.15)
+    all_ij$x_r <- all_ij$x + rnorm(nrow(all_ij), sd = 0.05) # add some randomness for visualization
+    all_ij$y_r <- all_ij$y + rnorm(nrow(all_ij), sd = 0.05)
     p_all_ij <- ggplot(data = all_ij, aes(x = x_r, y = y_r, color = step)) + 
       geom_hline(yintercept = i_0, linetype = "dotted") + 
       geom_vline(xintercept = j_0, linetype = "dotted") + 
       geom_point() + 
       geom_path() + 
       scale_color_viridis_c() + 
-      theme_minimal()
+      theme_minimal() + 
+      labs(x = "X [pix]", y = "Y [pix]", color = "Step")
     print(p_all_ij)
   }
   return(return_this)
