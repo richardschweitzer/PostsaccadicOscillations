@@ -13,3 +13,5 @@ At this point the repository contains:
 To see how the functions work, see the Rmarkdown file [ModelingDetectionOfPSOs.md](../main/ModelingDetectionOfPSOs.md). 
 
 If you use or adapt any of the methods, please cite the above book chapter - thank you!
+
+**Update 03-2023**: PSO detection based on saccade direction inversion, as described in [Figure 5 of the paper](https://www.biorxiv.org/content/biorxiv/early/2021/08/16/2021.03.24.436800/F5.large.jpg), is now also available for Python: Have a look at the function [check_for_PSO.py](../main/PostsaccadicOscillations_Python/check_for_PSO.py) 
