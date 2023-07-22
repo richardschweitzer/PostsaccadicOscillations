@@ -1,8 +1,10 @@
 # Postsaccadic Oscillations
 
-This repository contains R code developed in the context of the book chapter (pre-print https://doi.org/10.1101/2021.03.24.436800):
+This repository contains R code developed in the context of the book chapter (open-access pre-print: https://doi.org/10.1101/2021.03.24.436800):
 
 Schweitzer, R., Rolfs, M. (2022). Definition, Modeling, and Detection of Saccades in the Face of Post-saccadic Oscillations. In: Stuart, S. (Ed) Eye Tracking. Neuromethods, vol 183. Humana, New York, NY. https://doi.org/10.1007/978-1-0716-2391-6_5. 
+
+All data and analyses reported in the chapter can be found on OSF: https://osf.io/n36fx/. 
 
 At this point the repository contains:
 - Implementations of models to fit saccades with post-saccadic oscillations, as proposed by Bouzat et al. (2018) and Del Punta et al. (2019). To play around with the model parameters, you can have a look at this shiny visualization: https://richardschweitzer.shinyapps.io/pso_fitting_example/
