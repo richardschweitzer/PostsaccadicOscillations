@@ -48,15 +48,19 @@ class check_for_PSO_class:
         xy = np.matrix.transpose(xy) 
         # determine size and preallocate the velocity vector
         d = np.shape(xy)
-        N = d[0] - 1 # Python, unlike R, starts at 0 as first vector index
+        N = d[0] # Python, unlike R, starts at 0 as first vector index - this is fixed below
         v = np.matrix(np.zeros(d))
         # compute velocity
         if self.FIVE_POINT_SMOOTH==True:
-          v[3:(N-2),] = self.SAMPLING_RATE/6 * (xy[5:N,] + xy[4:(N-1),] - xy[2:(N-3),] - xy[1:(N-4),])
-          v[2,] = self.SAMPLING_RATE/2 * (xy[3,] - xy[1,])
-          v[(N-1),] = self.SAMPLING_RATE/2 * (xy[N,] - xy[(N-2),])   
+            v[2:(N-3),] = self.SAMPLING_RATE/6 * (xy[4:(N-1),] + xy[3:(N-2),] - xy[1:(N-4),] - xy[0:(N-5),])
+            v[1,] = self.SAMPLING_RATE/2 * (xy[2,] - xy[0,])
+            v[(N-2),] = self.SAMPLING_RATE/2 * (xy[(N-1),] - xy[(N-3),])   
+            # this has to be added for python compatibility, as indexing does not include the last element
+            v[(N-3),] = self.SAMPLING_RATE/6 * (xy[(N-1),] + xy[(N-2),] - xy[(N-4),] - xy[(N-5),])
         else:
-          v[2:(N-1),] = self.SAMPLING_RATE/2 * (xy[3:N,] - xy[1:(N-2),])
+            v[1:(N-2),] = self.SAMPLING_RATE/2 * (xy[2:(N-1),] - xy[0:(N-3),])
+            # this has to be added for python compatibility:
+            v[(N-2),] = self.SAMPLING_RATE/2 * (xy[(N-1),] - xy[(N-3),])
         return(v)   
     
     
